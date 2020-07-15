@@ -13,7 +13,10 @@ class Driver:
     
     def run(self, input_file=None):
         """
-        Run our Supermarket
+        Run our Supermarket scenario.
+        
+        Parameters:
+        input_file (str): Raw Scenario input file location
         """
         # Custom scenario
         if input_file:

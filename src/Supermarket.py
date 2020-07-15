@@ -28,7 +28,7 @@ class Checkout:
         until a price adjustment is applied. The item(s) are removed
         once a price adjustment is made (cannot double discount).
         
-        Paremeters:
+        Parameters:
         id (str): Unique id of next item being scanned
         """
         print("Scanning " + id)
@@ -109,7 +109,7 @@ class Scheme:
         """
         Process an individual Scheme entry.
         
-        Paremeters:
+        Parameters:
         key (str): Left-hand side of '->' in a Scheme entry
         val (str): Right-hand side of '->' in a Scheme entry
         """  
@@ -135,7 +135,7 @@ class Scheme:
         """
         Get all items required for this rule.
         
-        Paremeters:
+        Parameters:
         key (str): Left-hand side of '=' in a Rule
         
         Return:
@@ -159,7 +159,7 @@ class Scheme:
         """
         Calculate the value adjustment after applying the Rule.
         
-        Paremeters:
+        Parameters:
         expression (str): Right-hand side of '=' in a Rule
         
         Return:
@@ -183,7 +183,7 @@ class Scheme:
         """
         Gets all groups of characters found within  each { and }.
         
-        Paremeters:
+        Parameters:
         input (str): Input to evaluate
         
         Return:
@@ -202,7 +202,7 @@ class Scheme:
         
         Potential security risks minimized by using numexpr() over eval()
         
-        Paremeters:
+        Parameters:
         expression (str): Mathematical expression
         
         Return:
@@ -230,7 +230,7 @@ class Scheme:
         """
         Gets an item that exists in a rule based on its unique id
         
-        Paremeters:
+        Parameters:
         id (str): Unique id of item
         
         Returns:
@@ -245,7 +245,7 @@ class Scheme:
         """
         Get a rule to apply based on pending items in checkout.
         
-        Paremeters:
+        Parameters:
         items (list): List of pending items
         
         Returns:
