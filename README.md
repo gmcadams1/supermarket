@@ -6,4 +6,4 @@ scheme to calculate the total price for a number of items.
 ## Running
 python3 main.py
 
-python3 input\Scheme.txt input\Scenario1.txt
+python3 main.py input\Scheme.txt input\Scenario1.txt
