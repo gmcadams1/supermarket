@@ -30,7 +30,7 @@ This concept is quite powerful because any arbitrary rule can be defined as long
 ```
 In the above scenario, once item 8873 and coupon C1 is scanned, the price of item 8873 is reduced by 20% of its original price.
 
-Other possible scenarios include reducing/changing tax, charging no tax on specific items, Buy X get Y free (or for another price).
+Other possible scenarios include reducing/changing tax, charging no tax on specific items, buy X get Y free (or for another price), and so on.
 
 ## Assumptions
 It is assumed that sales tax is already included in the price of all items.
