@@ -19,7 +19,7 @@ A given Scheme is defined by a number of "Items" with an id/value and "Rules" wi
 ```
 In the above example, the "Bundled" rule in the scheme is defined by two specific items scanned in the same transaction.  When this rule is applied, the new combined price of these scanned items is equal to _B1_.  By having this scheme file, one is able to add/modify items/rules dynamically without changing any code.
 
-This concept is quite powerful because any arbitrary rule can be defined as long as it is a mathematically valid expression and contains valid items.  For example, suppose we wanted to add functionality for a coupon on a specific item:
+This concept is quite powerful because any arbitrary rule can be defined as long as it contains a mathematically valid expression on the right-hand side, and contains valid items on the left-hand side.  For example, suppose we wanted to add functionality for a coupon on a specific item:
 ```
 # Items:
 {8873} -> 2.49
@@ -30,10 +30,10 @@ This concept is quite powerful because any arbitrary rule can be defined as long
 ```
 In the above scenario, once item 8873 and coupon C1 is scanned, the price of item 8873 is reduced by 20% of its original price.
 
-Other possible scenarios include reducing/changing tax, charging no tax on specific items, buy X get Y free (or for another price), and so on.
+Other possible scenarios include reducing/changing tax, charging no/additional tax on specific items, buy X get Y free (or for another price), and so on.
 
 ## Assumptions
-It is assumed that sales tax is already included in the price of all items.
+It is assumed that sales tax is already included in the price of all items (based on the output of the given test scenario).
 
 ## Running
 Default Scheme file and scenario
