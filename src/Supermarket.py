@@ -1,4 +1,6 @@
 import re
+import numexpr
+import doctest
 from collections import Counter
 from abc import ABC
 
@@ -11,12 +13,12 @@ __status__ = "Prototype"
 
 class Checkout:
     def __init__(self, scheme):
-        self.scheme = Scheme(scheme)
+        self._scheme = Scheme(scheme)
         # Contains items that may be price-adjusted at some point
-        self.pending_items = []
+        self._pending_items = []
         # Current total price
-        self.total = 0
-      
+        self._total = 0
+    
     def scan(self, id):
         """
         Scans an item and adds it to the total.
@@ -31,51 +33,62 @@ class Checkout:
         """
         print("Scanning " + id)
         # Get item info from our Scheme
-        item = self.scheme.get_item(id)
+        # If it doesn't exist, exit gracefully
+        if (item := self._scheme.get_item(id)) is None:
+            return
         # If a Product, print price and add to total
         if isinstance(item,Product):
             print("Price " + str(item.get_value()))
-            self.total = round(self.total+item.get_value(),2)
+            self._total = round(self._total+item.get_value(),2)
         # If a Coupon, print discount
         # Do not apply to running total
         elif isinstance(item,Coupon):
             print(item.get_percentage() + " off coupon")
         # Add item to pending items if a rule exists that includes it
         # Also get the rule that may or may not meet the criteria yet
-        if self.scheme.get_item(item):
-            self.pending_items.append(item)
-            rule = self.scheme.get_rule(self.pending_items)
+        if self._scheme.get_item(item):
+            self._pending_items.append(item)
+            rule = self._scheme.get_rule(self._pending_items)
         
         # If a rule may apply to the latest item
         if rule:
-            # Remove items from list only if multiple items exist in rule
-            # Single items might be adjusted individually and used later
-            if len(rule.get_items()) > 1:
-                for item in rule.get_items():
-                    self.pending_items.remove(item)
-            # Adjust total price
-            self.total = round(self.total+rule.get_diff(),2)
-            print("Adjustment " + rule.get_name() 
-                    + " " + str(rule.get_diff())
-                    + " applied!")
+            self.__apply_rule(rule)
     
-    def get_total(self):
+    def __apply_rule(self, rule):
+        """
+        Applies a rule to one or more pending Items that have been scanned.
+        
+        Parameters:
+        rule (Rule): Rule to apply
+        """
+        # Remove items from list only if multiple items exist in rule
+        # Single items might be adjusted individually and used later
+        if len(rule.get_items()) > 1:
+            for item in rule.get_items():
+                self._pending_items.remove(item)
+        # Adjust total price
+        self._total = round(self._total+rule.get_diff(),2)
+        print("Adjustment " + rule.get_name() 
+                + " " + str(rule.get_diff())
+                + " applied!")
+    
+    def getTotal(self):
         """
         Gets total value of all scannned items plus/minus adjustments applied
         
         Returns:
         str: Total current value
         """
-        return self.total
+        return self._total
 
 class Scheme:
     def __init__(self, scheme_input):
         # Raw input Scheme file location
-        self.scheme_input = scheme_input
-        # Items ex. {8873} -> 2.49
-        self.items = []
+        self._scheme_input = scheme_input
+        # Items with values ex. {8873} -> 2.49
+        self._items = []
         # Rules ex. {Bundle} -> {6732}{4900}={B1}
-        self.rules = []
+        self._rules = []
         self.__read_scheme()
        
     def __read_scheme(self):
@@ -83,11 +96,14 @@ class Scheme:
         Process input Scheme file into a set of items and rules.
         """  
         # Read the scheme
-        contents = open(self.scheme_input, 'r')
+        contents = open(self._scheme_input, 'r')
         
         for line in contents:
             (key, val) = line.split(' -> ')
-            self.__process_scheme(key, val)
+            try:
+                self.__process_scheme(key, val)
+            except (RuntimeError, SyntaxError, TypeError, KeyError, StopIteration):
+                print("Issue with processing scheme item: " + line)
     
     def __process_scheme(self, key, val):
         """
@@ -104,16 +120,16 @@ class Scheme:
             tot_items = self.__required_items(items)
             # Calculate total value adjustment for this rule
             tot_amount = self.__calc_expression(expression)
-            self.rules.append(Rule(key,tot_items,tot_amount))
+            self._rules.append(Rule(key,tot_items,tot_amount))
         # Scheme entry is an Item
         else:
-            item = re.search('\{([^}]+)', key).group(1)
+            item = self.__get_within_brackets(key)[0]
             # Coupons start with 'C'
             if item.startswith('C'):
-                self.items.append(Coupon(item,float(eval(val))))
+                self._items.append(Coupon(item,self.__safe_eval(val)))
             # Else a product
             else:
-                self.items.append(Product(item,float(eval(val))))
+                self._items.append(Product(item,self.__safe_eval(val)))
     
     def __required_items(self, items):
         """
@@ -128,11 +144,14 @@ class Scheme:
         item_list = []
         
         # Get all items enclosed in brackets
-        items = re.findall('\{([^}]+)', items)
+        items = self.__get_within_brackets(items)
         for item in items:
             # Get each item required for the rule
             # Note: Items need to precede rules in Scheme
-            item_list.append(next(filter(lambda i: i.get_id() == item, self.items)))
+            try:
+                item_list.append(next(filter(lambda i: i.get_id() == item, self._items)))
+            except StopIteration:
+                print("Item " + item + " not found in Scheme!")
             
         return item_list
     
@@ -147,14 +166,65 @@ class Scheme:
         float: Calculated value of expression
         """ 
         # Get all items enclosed in brackets
-        items = set(re.findall('\{([^}]+)', expression))
+        # Using set since we are replacing all occurences together
+        items = set(self.__get_within_brackets(expression))
         
         for item in items:
             # Replace each item in expression with its value
-            expression = expression.replace('{'+item+'}', 
-                str(next(filter(lambda i: i.get_id() == item, self.items)).get_value()))
+            try:
+                expression = expression.replace('{'+item+'}', 
+                    str(next(filter(lambda i: i.get_id() == item, self._items)).get_value()))
+            except StopIteration:
+                print("Item " + item + " not found in Scheme!")
         
-        return eval(expression)    
+        return self.__safe_eval(expression)    
+    
+    def __get_within_brackets(self, input):
+        """
+        Gets all groups of characters found within  each { and }.
+        
+        Paremeters:
+        input (str): Input to evaluate
+        
+        Return:
+        list: List of found groups
+        """ 
+        res = re.findall('\{([^}]+)', input)
+        
+        if len(res) == 0:
+            raise RuntimeError("No expression inside {} for input: " + input)
+        
+        return res 
+    
+    def __safe_eval(self, expression):
+        """
+        Evaluate an arbirary mathemetical expression.
+        
+        Potential security risks minimized by using numexpr() over eval()
+        
+        Paremeters:
+        expression (str): Mathematical expression
+        
+        Return:
+        float: Expression value
+        
+        Raise:
+        SyntaxError, RuntimeError, KeyError, TypeError: Issue with expression
+        
+        >>> t._scheme.__safe_eval('1+2')
+        3
+        """
+        # Safer
+        try:
+            return numexpr.evaluate(expression).item()
+        except (SyntaxError, RuntimeError, KeyError, TypeError):
+            print("Issue with expression " + expression)
+            raise
+        # Less safe
+        ##code = compile(expression, "<string>", "eval")
+        ##if code.co_names:
+            ##raise NameError("Use of names not allowed")
+        ##return eval(code, {"__builtins__": {}}, {})
     
     def get_item(self, id):
         """
@@ -166,7 +236,10 @@ class Scheme:
         Returns:
         str: Item that exists in a rule
         """
-        return next(filter(lambda i: i.get_id() == id, self.items))
+        try:
+            return next(filter(lambda i: i.get_id() == id, self._items))
+        except StopIteration:
+            print(id + " not found in Scheme!")
        
     def get_rule(self, items):
         """
@@ -183,7 +256,7 @@ class Scheme:
         best_count = float('inf')
         # Rule matches if it's items exist as a subset 
         #   to the total pending items in checkout.
-        for rule in self.rules:
+        for rule in self._rules:
             # A valid rule will apply to latest item (optimization)
             if items[-1] not in rule.get_items():
                 continue
@@ -276,3 +349,6 @@ class Coupon(Item):
         str: Formatted output
         """
         return str(round(self._value*100,2))+"%"
+        
+if __name__ == '__main__':
+    doctest.testmod(extraglobs={'t': Checkout('input\TestScheme.txt')})

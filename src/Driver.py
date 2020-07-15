@@ -15,11 +15,13 @@ class Driver:
         """
         Run our Supermarket
         """
+        # Custom scenario
         if input_file:
             scenario = open(input_file, 'r')
             for item in scenario:
                 self.checkout.scan(item.rstrip())
 
+        # Default scenario
         else:
             self.checkout.scan("1983") # toothbrush
             self.checkout.scan("4900") # salsa
@@ -30,5 +32,6 @@ class Driver:
             self.checkout.scan("1983") # toothbrush
             self.checkout.scan("1983") # toothbrush
             
-        cents = self.checkout.get_total()
+        # Get our final total
+        cents = self.checkout.getTotal()
         print("Total: " + str(cents))
