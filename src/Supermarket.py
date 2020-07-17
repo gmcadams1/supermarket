@@ -1,6 +1,5 @@
 import re
 import numexpr
-import doctest
 from collections import Counter
 from abc import ABC
 
@@ -48,6 +47,16 @@ class Checkout:
         
         Parameters:
         id (str): Unique id of next item being scanned
+        
+        >>> c.scan('123') #doctest: +ELLIPSIS
+        Scanning 123
+        123 not found in Scheme!
+        >>> c.scan('8873') #doctest: +ELLIPSIS
+        Scanning 8873
+        Price 2.49
+        >>> c.scan('1983') #doctest: +ELLIPSIS
+        Scanning 1983
+        Price 1.99
         """
         
         print("Scanning " + id)
@@ -98,6 +107,15 @@ class Checkout:
         
         Returns:
         str: Total current value
+        
+        >>> c.getTotal()
+        0
+        >>> c.scan('8873') #doctest: +ELLIPSIS
+        Scanning 8873
+        Price 2.49
+        >>> c.getTotal()
+        2.49
+        
         """
         
         return self._total
@@ -260,9 +278,6 @@ class Scheme:
         
         Raise:
         SyntaxError, RuntimeError, KeyError, TypeError: Issue with expression
-        
-        >>> t._scheme.__safe_eval('1+2')
-        3
         """
         
         # Safer
@@ -286,6 +301,11 @@ class Scheme:
         
         Returns:
         str: Item that exists in a rule
+        
+        >>> s.get_item('123')
+        123 not found in Scheme!
+        >>> s.get_item('8873') #doctest: +ELLIPSIS
+        <__main__.Product object at 0x...>
         """
         
         try:
@@ -302,6 +322,11 @@ class Scheme:
         
         Returns:
         Rule: Rule to apply at checkout
+        
+        >>> s.get_rule([Product('123',123)])
+        >>> s.get_rule([s.get_item('8873')])
+        >>> s.get_rule([s.get_item('8873'),s.get_item('C1')]) #doctest: +ELLIPSIS
+        <__main__.Rule object at 0x...>
         """
         
         # Keep track of the best rule to use
@@ -432,9 +457,15 @@ class Coupon(Item):
         
         Returns:
         str: Formatted output
+        
+        >>> cou.get_percentage()
+        '50.0%'
         """
         
         return str(round(self._value*100,2))+"%"
         
 if __name__ == '__main__':
-    doctest.testmod(extraglobs={'t': Checkout('input\TestScheme.txt')})
+    import doctest
+    doctest.testmod(extraglobs={'s': Scheme('input\TestScheme.txt'), 
+                                'cou': Coupon('CT',0.5),
+                                'c': Checkout('input\TestScheme.txt')})

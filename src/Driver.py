@@ -18,6 +18,7 @@ class Driver:
         Parameters:
         input_file (str): Raw Scenario input file location
         """
+        
         # Custom scenario
         if input_file:
             scenario = open(input_file, 'r')
