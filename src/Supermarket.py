@@ -12,6 +12,24 @@ __email__ = "gmcadams1@comcast.net"
 __status__ = "Prototype"
 
 class Checkout:
+    """
+    A class representing an object whose functionality 
+        is to scan items and calculate their total cost.
+        
+    Attributes:
+    scheme (Scheme): An object representing item pricing/incentives
+    pending_items (list): List of Items that have been scanned, 
+        but have potential price adjustments depending on future Items
+    total (float): Current running total of all items scanned
+        including price adjustments
+        
+    Methods:
+    scan(id)
+        Scans an item and adds its price to the total.
+    getTotal()
+        Gets current running total.
+    """
+    
     def __init__(self, scheme):
         self._scheme = Scheme(scheme)
         # Contains items that may be price-adjusted at some point
@@ -21,7 +39,7 @@ class Checkout:
     
     def scan(self, id):
         """
-        Scans an item and adds it to the total.
+        Scans an item and adds its price to the total.
         
         All items that have potential price adjustments, depending on 
         subsequent items that may be scanned in the future, are stored
@@ -31,6 +49,7 @@ class Checkout:
         Parameters:
         id (str): Unique id of next item being scanned
         """
+        
         print("Scanning " + id)
         # Get item info from our Scheme
         # If it doesn't exist, exit gracefully
@@ -61,6 +80,7 @@ class Checkout:
         Parameters:
         rule (Rule): Rule to apply
         """
+        
         # Remove items from list only if multiple items exist in rule
         # Single items might be adjusted individually and used later
         if len(rule.get_items()) > 1:
@@ -79,9 +99,28 @@ class Checkout:
         Returns:
         str: Total current value
         """
+        
         return self._total
 
 class Scheme:
+    """
+    A class representing a scheme.
+    
+    A scheme is a series of Items with defined values, and Rules
+        describing price changes for Items if certain criteria are met.
+        
+    Attributes:
+    scheme_input (str): Raw input Scheme file location
+    items (list): List of Items
+    rules (list): List of Rules
+        
+    Methods:
+    get_item()
+        Get an item that exists in a rule
+    get_rule()
+        Get a Rule based on given items
+    """
+    
     def __init__(self, scheme_input):
         # Raw input Scheme file location
         self._scheme_input = scheme_input
@@ -94,12 +133,19 @@ class Scheme:
     def __read_scheme(self):
         """
         Process input Scheme file into a set of items and rules.
-        """  
+        """
+        
         # Read the scheme
         contents = open(self._scheme_input, 'r')
         
         for line in contents:
-            (key, val) = line.split(' -> ')
+            # If comment line or empty line
+            if line.startswith('#') or not line.strip():
+                continue
+            try:
+                (key, val) = line.split(' -> ')
+            except ValueError:
+                print("Bad scheme entry; not separated by ' -> ': " + line)
             try:
                 self.__process_scheme(key, val)
             except (RuntimeError, SyntaxError, TypeError, KeyError, StopIteration):
@@ -112,7 +158,8 @@ class Scheme:
         Parameters:
         key (str): Left-hand side of '->' in a Scheme entry
         val (str): Right-hand side of '->' in a Scheme entry
-        """  
+        """
+        
         # Scheme entry is a Rule
         if '=' in val:
             (items, expression) = val.split('=')
@@ -120,7 +167,7 @@ class Scheme:
             tot_items = self.__required_items(items)
             # Calculate total value adjustment for this rule
             tot_amount = self.__calc_expression(expression)
-            self._rules.append(Rule(key,tot_items,tot_amount))
+            self._rules.append(Rule(self.__get_within_brackets(key)[0],tot_items,tot_amount))
         # Scheme entry is an Item
         else:
             item = self.__get_within_brackets(key)[0]
@@ -140,7 +187,8 @@ class Scheme:
         
         Return:
         list: List of required Items
-        """ 
+        """
+        
         item_list = []
         
         # Get all items enclosed in brackets
@@ -164,7 +212,8 @@ class Scheme:
         
         Return:
         float: Calculated value of expression
-        """ 
+        """
+        
         # Get all items enclosed in brackets
         # Using set since we are replacing all occurences together
         items = set(self.__get_within_brackets(expression))
@@ -188,7 +237,8 @@ class Scheme:
         
         Return:
         list: List of found groups
-        """ 
+        """
+        
         res = re.findall('\{([^}]+)', input)
         
         if len(res) == 0:
@@ -214,6 +264,7 @@ class Scheme:
         >>> t._scheme.__safe_eval('1+2')
         3
         """
+        
         # Safer
         try:
             return numexpr.evaluate(expression).item()
@@ -236,6 +287,7 @@ class Scheme:
         Returns:
         str: Item that exists in a rule
         """
+        
         try:
             return next(filter(lambda i: i.get_id() == id, self._items))
         except StopIteration:
@@ -243,7 +295,7 @@ class Scheme:
        
     def get_rule(self, items):
         """
-        Get a rule to apply based on pending items in checkout.
+        Get the best rule to apply based on pending items in checkout.
         
         Parameters:
         items (list): List of pending items
@@ -251,6 +303,7 @@ class Scheme:
         Returns:
         Rule: Rule to apply at checkout
         """
+        
         # Keep track of the best rule to use
         best_rule = None
         best_count = float('inf')
@@ -272,6 +325,17 @@ class Scheme:
         return best_rule
         
 class Rule:
+    """
+    A class representing a rule in a scheme.
+        
+    Attributes:
+    name (str): Unique name
+    items (list): List of Items used in this Rule
+    amount (float): Value of the expression
+    diff (float): Price difference between the normal 
+        price of all Items and the Rule's expression value
+    """
+    
     def __init__(self, name, items, amount):
         # Unique name of rule
         self._name = name
@@ -291,6 +355,7 @@ class Rule:
         Returns:
         float: Amount to adjust
         """
+        
         tot = 0
         # Adjust price of each previously scanned Product
         # Does not apply to Coupons since they were not
@@ -312,6 +377,14 @@ class Rule:
         return self._diff
 
 class Item(ABC):
+    """
+    A class representing an abstract item.
+        
+    Attributes:
+    id (str): Unique id
+    value (float): Value of Item
+    """
+    
     def __init__(self, id, value):
         # Unique id of Item
         self._id = id # '1234'
@@ -334,10 +407,22 @@ class Item(ABC):
         return self._value
 
 class Product(Item):
+    """
+    A class representing a Product item.
+    """
+    
     def __init__(self, id, price):
         Item.__init__(self, id, price)
 
 class Coupon(Item):
+    """
+    A class representing a Coupon item.
+    
+    Methods:
+    get_percentage()
+        Get percentage to print
+    """
+    
     def __init__(self, id, discount):
         Item.__init__(self, id, discount)
         
@@ -348,6 +433,7 @@ class Coupon(Item):
         Returns:
         str: Formatted output
         """
+        
         return str(round(self._value*100,2))+"%"
         
 if __name__ == '__main__':
