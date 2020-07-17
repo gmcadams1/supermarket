@@ -44,3 +44,8 @@ Custom Scheme file and scenario
 ```
 python3 main.py input\Scheme.txt input\Scenario1.txt
 ```
+_Note_: Requires package numexpr as currently implemented.
+```
+# Install numexpr
+pip install numexpr
+```
