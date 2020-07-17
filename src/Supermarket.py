@@ -1,7 +1,7 @@
 import re
 import numexpr
 from collections import Counter
-from abc import ABC
+from abc import ABC, abstractmethod
 
 __author__ = "Gregory McAdams"
 __license__ = "MIT"
@@ -16,17 +16,17 @@ class Checkout:
         is to scan items and calculate their total cost.
         
     Attributes:
-    scheme (Scheme): An object representing item pricing/incentives
-    pending_items (list): List of Items that have been scanned, 
-        but have potential price adjustments depending on future Items
-    total (float): Current running total of all items scanned
-        including price adjustments
+        scheme (Scheme): An object representing item pricing/incentives
+        pending_items (list): List of Items that have been scanned, 
+            but have potential price adjustments depending on future Items
+        total (float): Current running total of all items scanned
+            including price adjustments
         
     Methods:
-    scan(id)
-        Scans an item and adds its price to the total.
-    getTotal()
-        Gets current running total.
+        scan(id)
+            Scans an item and adds its price to the total.
+        getTotal()
+            Gets current running total.
     """
     
     def __init__(self, scheme):
@@ -41,12 +41,12 @@ class Checkout:
         Scans an item and adds its price to the total.
         
         All items that have potential price adjustments, depending on 
-        subsequent items that may be scanned in the future, are stored
-        until a price adjustment is applied. The item(s) are removed
-        once a price adjustment is made (cannot double discount).
+            subsequent items that may be scanned in the future, are stored
+            until a price adjustment is applied. The item(s) are removed
+            once a price adjustment is made (cannot double discount).
         
         Parameters:
-        id (str): Unique id of next item being scanned
+            id (str): Unique id of next item being scanned
         
         >>> c.scan('123') #doctest: +ELLIPSIS
         Scanning 123
@@ -87,7 +87,7 @@ class Checkout:
         Applies a rule to one or more pending Items that have been scanned.
         
         Parameters:
-        rule (Rule): Rule to apply
+            rule (Rule): Rule to apply
         """
         
         # Remove items from list only if multiple items exist in rule
@@ -106,7 +106,7 @@ class Checkout:
         Gets total value of all scannned items plus/minus adjustments applied
         
         Returns:
-        str: Total current value
+            str: Total current value
         
         >>> c.getTotal()
         0
@@ -115,7 +115,6 @@ class Checkout:
         Price 2.49
         >>> c.getTotal()
         2.49
-        
         """
         
         return self._total
@@ -128,15 +127,15 @@ class Scheme:
         describing price changes for Items if certain criteria are met.
         
     Attributes:
-    scheme_input (str): Raw input Scheme file location
-    items (list): List of Items
-    rules (list): List of Rules
+        scheme_input (str): Raw input Scheme file location
+        items (list): List of Items
+        rules (list): List of Rules
         
     Methods:
-    get_item()
-        Get an item that exists in a rule
-    get_rule()
-        Get a Rule based on given items
+        get_item()
+            Get an item that exists in a rule
+        get_rule()
+            Get a Rule based on given items
     """
     
     def __init__(self, scheme_input):
@@ -174,8 +173,8 @@ class Scheme:
         Process an individual Scheme entry.
         
         Parameters:
-        key (str): Left-hand side of '->' in a Scheme entry
-        val (str): Right-hand side of '->' in a Scheme entry
+            key (str): Left-hand side of '->' in a Scheme entry
+            val (str): Right-hand side of '->' in a Scheme entry
         """
         
         # Scheme entry is a Rule
@@ -201,10 +200,10 @@ class Scheme:
         Get all items required for this rule.
         
         Parameters:
-        key (str): Left-hand side of '=' in a Rule
+            key (str): Left-hand side of '=' in a Rule
         
-        Return:
-        list: List of required Items
+        Returns:
+            list: List of required Items
         """
         
         item_list = []
@@ -226,10 +225,10 @@ class Scheme:
         Calculate the value adjustment after applying the Rule.
         
         Parameters:
-        expression (str): Right-hand side of '=' in a Rule
+            expression (str): Right-hand side of '=' in a Rule
         
-        Return:
-        float: Calculated value of expression
+        Returns:
+            float: Calculated value of expression
         """
         
         # Get all items enclosed in brackets
@@ -251,10 +250,10 @@ class Scheme:
         Gets all groups of characters found within  each { and }.
         
         Parameters:
-        input (str): Input to evaluate
+            input (str): Input to evaluate
         
-        Return:
-        list: List of found groups
+        Returns:
+            list: List of found groups
         """
         
         res = re.findall('\{([^}]+)', input)
@@ -271,10 +270,10 @@ class Scheme:
         Potential security risks minimized by using numexpr() over eval()
         
         Parameters:
-        expression (str): Mathematical expression
+            expression (str): Mathematical expression
         
-        Return:
-        float: Expression value
+        Returns:
+            float: Expression value
         
         Raise:
         SyntaxError, RuntimeError, KeyError, TypeError: Issue with expression
@@ -297,10 +296,10 @@ class Scheme:
         Gets an item that exists in a rule based on its unique id
         
         Parameters:
-        id (str): Unique id of item
+            id (str): Unique id of item
         
         Returns:
-        str: Item that exists in a rule
+            str: Item that exists in a rule
         
         >>> s.get_item('123')
         123 not found in Scheme!
@@ -318,10 +317,10 @@ class Scheme:
         Get the best rule to apply based on pending items in checkout.
         
         Parameters:
-        items (list): List of pending items
+            items (list): List of pending items
         
         Returns:
-        Rule: Rule to apply at checkout
+            Rule: Rule to apply at checkout
         
         >>> s.get_rule([Product('123',123)])
         >>> s.get_rule([s.get_item('8873')])
@@ -354,11 +353,11 @@ class Rule:
     A class representing a rule in a scheme.
         
     Attributes:
-    name (str): Unique name
-    items (list): List of Items used in this Rule
-    amount (float): Value of the expression
-    diff (float): Price difference between the normal 
-        price of all Items and the Rule's expression value
+        name (str): Unique name
+        items (list): List of Items used in this Rule
+        amount (float): Value of the expression
+        diff (float): Price difference between the normal 
+            price of all Items and the Rule's expression value
     """
     
     def __init__(self, name, items, amount):
@@ -378,7 +377,7 @@ class Rule:
         Calculate amount to adjust current checkout total.
         
         Returns:
-        float: Amount to adjust
+            float: Amount to adjust
         """
         
         tot = 0
@@ -406,63 +405,84 @@ class Item(ABC):
     A class representing an abstract item.
         
     Attributes:
-    id (str): Unique id
-    value (float): Value of Item
+        id (str): Unique id
+        value (float): Value of Item
     """
     
-    def __init__(self, id, value):
+    def __init__(self, id):
         # Unique id of Item
         self._id = id # '1234'
-        # Value of Item
-        self._value = value # float
         
     def __eq__(self, other_id):
         return self._id == other_id
-    
-    def __hash__(self):
-        return hash((self._id, self._value))
-        
-    def __str__(self):
-        return str(self._id) + "," + str(self._value)
         
     def get_id(self):
         return self._id
-        
+    
+    @abstractmethod
     def get_value(self):
-        return self._value
+        """
+        Get a concrete Item's value.
+        
+        Returns:
+            float: Value of item
+        """
+ 
+        pass
 
 class Product(Item):
     """
     A class representing a Product item.
     """
     
-    def __init__(self, id, price):
-        Item.__init__(self, id, price)
+    def __init__(self, id, value):
+        Item.__init__(self, id)
+        # Dollar value of Product
+        self._value = value # float
+        
+    def __hash__(self):
+        return hash((self._id, self._value))
+    
+    def __str__(self):
+        return "Product " + str(self._id) + "," + str(self._value)
+
+    def get_value(self):
+        return self._value
 
 class Coupon(Item):
     """
     A class representing a Coupon item.
     
     Methods:
-    get_percentage()
-        Get percentage to print
+        get_percentage(): Get percentage to print
     """
     
     def __init__(self, id, discount):
-        Item.__init__(self, id, discount)
+        Item.__init__(self, id)
+        # Discount value of Coupon
+        self._discount = discount
         
+    def __hash__(self):
+        return hash((self._id, self._discount))
+    
+    def __str__(self):
+        return "Coupon " + str(self._id) + "," + str(self._discount)
+    
+    def get_value(self):
+        return self._discount
+    
     def get_percentage(self):
         """
-        Returns formatted percentage
+        Get formatted percentage of Coupon
         
         Returns:
-        str: Formatted output
+            str: Formatted output
         
         >>> cou.get_percentage()
         '50.0%'
         """
         
-        return str(round(self._value*100,2))+"%"
+        return str(round(self._discount*100,2))+"%"
         
 if __name__ == '__main__':
     import doctest
