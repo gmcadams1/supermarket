@@ -53,10 +53,10 @@ class Checkout:
         123 not found in Scheme!
         >>> c.scan('8873') #doctest: +ELLIPSIS
         Scanning 8873
-        Price 2.49
+        Product 8873 valued at 2.49
         >>> c.scan('1983') #doctest: +ELLIPSIS
         Scanning 1983
-        Price 1.99
+        Product 1983 valued at 1.99
         """
         
         print("Scanning " + id)
@@ -70,14 +70,13 @@ class Checkout:
         # Print info based on Item type/value
         print(item)
         # Add item to pending items if a rule exists that includes it
-        # Also get the rule that may or may not meet the criteria yet
-        if self._scheme.is_in_rule(item):
+        if self._scheme.exists_in_rule(item):
             self._pending_items.append(item)
-            rule = self._scheme.get_rule(self._pending_items)
-        
-        # If a rule may apply to the latest item
-        if rule:
-            self.__apply_rule(rule)
+            # Get the best rule in which its criteria is fully met
+            # Rule applies to the latest item at a minimum
+            rule = self._scheme.get_rule(self._pending_items)        
+            if rule:
+                self.__apply_rule(rule)
     
     def __apply_rule(self, rule):
         """
@@ -110,7 +109,7 @@ class Checkout:
         0
         >>> c.scan('8873') #doctest: +ELLIPSIS
         Scanning 8873
-        Price 2.49
+        Product 8873 valued at 2.49
         >>> c.getTotal()
         2.49
         """
@@ -266,7 +265,7 @@ class Scheme:
         """
         Evaluate an arbirary mathemetical expression.
         
-        Potential security risks minimized by using numexpr() over eval()
+        Potential security risks minimized by using numexpr() over eval().
         
         Parameters:
             expression (str): Mathematical expression
@@ -290,14 +289,31 @@ class Scheme:
             ##raise NameError("Use of names not allowed")
         ##return eval(code, {"__builtins__": {}}, {})
     
-    def is_in_rule(self, item):
+    def exists_in_rule(self, item):
+        """
+        Determines if an item exists in at least one rule.
+        
+        Parameters:
+            id (str): Unique id of item
+        
+        Returns:
+            bool: True if Item exists in >= 1 Rule, False otherwise
+            
+        >>> s.exists_in_rule('8873')
+        True
+        >>> s.exists_in_rule('123')
+        False
+        """
+        
         for rule in self._rules:
             if item in rule.get_items():
                 return True
+        
+        return False
     
     def get_item(self, id):
         """
-        Gets an item that exists in a rule based on its unique id
+        Gets an item that exists in the Scheme.
         
         Parameters:
             id (str): Unique id of item
@@ -389,8 +405,7 @@ class Rule:
         # Does not apply to Coupons since they were not
         #   added to checkout total originally
         for item in self._items:
-            if isinstance(item,Product):
-                tot += item.get_value()
+            tot += item.get_intrinsic_value()
           
         # Round to nearest cent
         return round(self._amount-tot,2)
