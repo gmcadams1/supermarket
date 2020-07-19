@@ -63,18 +63,15 @@ class Checkout:
         # Get item info from our Scheme
         # If it doesn't exist, exit gracefully
         if (item := self._scheme.get_item(id)) is None:
-            return
-        # If a Product, print price and add to total
-        if isinstance(item,Product):
-            print("Price " + str(item.get_value()))
-            self._total = round(self._total+item.get_value(),2)
-        # If a Coupon, print discount
-        # Do not apply to running total
-        elif isinstance(item,Coupon):
-            print(item.get_percentage() + " off coupon")
+            return    
+        # If a Product, add intrinsic value to total
+        # If a Coupon, no intrinsic value, so do not add to total
+        self._total = round(self._total+item.get_intrinsic_value(),2)
+        # Print info based on Item type/value
+        print(item)
         # Add item to pending items if a rule exists that includes it
         # Also get the rule that may or may not meet the criteria yet
-        if self._scheme.get_item(item):
+        if self._scheme.is_in_rule(item):
             self._pending_items.append(item)
             rule = self._scheme.get_rule(self._pending_items)
         
@@ -99,7 +96,8 @@ class Checkout:
         self._total = round(self._total+rule.get_diff(),2)
         print("Adjustment " + rule.get_name() 
                 + " " + str(rule.get_diff())
-                + " applied!")
+                + " applied for item(s) "
+                + ", ".join([str(i.get_id()) for i in rule.get_items()]))
     
     def getTotal(self):
         """
@@ -167,6 +165,7 @@ class Scheme:
                 self.__process_scheme(key, val)
             except (RuntimeError, SyntaxError, TypeError, KeyError, StopIteration):
                 print("Issue with processing scheme item: " + line)
+                raise
     
     def __process_scheme(self, key, val):
         """
@@ -291,6 +290,11 @@ class Scheme:
             ##raise NameError("Use of names not allowed")
         ##return eval(code, {"__builtins__": {}}, {})
     
+    def is_in_rule(self, item):
+        for rule in self._rules:
+            if item in rule.get_items():
+                return True
+    
     def get_item(self, id):
         """
         Gets an item that exists in a rule based on its unique id
@@ -299,7 +303,7 @@ class Scheme:
             id (str): Unique id of item
         
         Returns:
-            str: Item that exists in a rule
+            Item: Item that exists in a rule
         
         >>> s.get_item('123')
         123 not found in Scheme!
@@ -406,7 +410,6 @@ class Item(ABC):
         
     Attributes:
         id (str): Unique id
-        value (float): Value of Item
     """
     
     def __init__(self, id):
@@ -419,6 +422,17 @@ class Item(ABC):
     def get_id(self):
         return self._id
     
+    @abstractmethod
+    def get_intrinsic_value(self):
+        """
+        Get a concrete Item's intrinsic value.
+        
+        Returns:
+            float: Value of item
+        """
+ 
+        pass
+
     @abstractmethod
     def get_value(self):
         """
@@ -433,6 +447,10 @@ class Item(ABC):
 class Product(Item):
     """
     A class representing a Product item.
+    
+    Attributes:
+        id (str): Unique id
+        value (float): Value of Product
     """
     
     def __init__(self, id, value):
@@ -444,7 +462,10 @@ class Product(Item):
         return hash((self._id, self._value))
     
     def __str__(self):
-        return "Product " + str(self._id) + "," + str(self._value)
+        return "Product " + str(self._id) + " valued at " + str(self._value)
+
+    def get_intrinsic_value(self):
+        return self._value
 
     def get_value(self):
         return self._value
@@ -452,6 +473,10 @@ class Product(Item):
 class Coupon(Item):
     """
     A class representing a Coupon item.
+    
+    Attributes:
+        id (str): Unique id
+        discount (float): Discount of Coupon
     
     Methods:
         get_percentage(): Get percentage to print
@@ -466,7 +491,11 @@ class Coupon(Item):
         return hash((self._id, self._discount))
     
     def __str__(self):
-        return "Coupon " + str(self._id) + "," + str(self._discount)
+        return "Coupon " + str(self._id) + " with a discount of " + self.get_percentage()
+    
+    def get_intrinsic_value(self):
+        # Coupon has no value by itself (i.e. no intrinsic value)
+        return 0
     
     def get_value(self):
         return self._discount
