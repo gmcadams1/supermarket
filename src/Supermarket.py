@@ -150,8 +150,8 @@ class Scheme:
         """
         
         # Read the scheme
-        with open(self._scheme_input, 'r') as f:
-            for line in f:
+        with open(self._scheme_input, 'r') as scheme:
+            for line in scheme:
                 # If comment line or empty line
                 if line.startswith('#') or not line.strip():
                     continue
