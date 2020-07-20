@@ -162,9 +162,9 @@ class Scheme:
                 print("Bad scheme entry; not separated by ' -> ': " + line)
             try:
                 self.__process_scheme(key, val)
-            except (RuntimeError, SyntaxError, TypeError, KeyError, StopIteration):
+            except (RuntimeError, SyntaxError, TypeError, KeyError, StopIteration) as e:
                 print("Issue with processing scheme item: " + line)
-                raise
+                print(e)
     
     def __process_scheme(self, key, val):
         """
@@ -280,8 +280,9 @@ class Scheme:
         # Safer
         try:
             return numexpr.evaluate(expression).item()
-        except (SyntaxError, RuntimeError, KeyError, TypeError):
+        except (SyntaxError, RuntimeError, KeyError, TypeError) as e:
             print("Issue with expression " + expression)
+            print(e)
             raise
         # Less safe
         ##code = compile(expression, "<string>", "eval")
