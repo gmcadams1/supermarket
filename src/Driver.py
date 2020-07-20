@@ -21,9 +21,9 @@ class Driver:
         
         # Custom scenario
         if input_file:
-            scenario = open(input_file, 'r')
-            for item in scenario:
-                self.checkout.scan(item.rstrip())
+            with open(input_file, 'r') as scenario:
+                for item in scenario:
+                    self.checkout.scan(item.rstrip())
 
         # Default scenario
         else:

@@ -150,21 +150,20 @@ class Scheme:
         """
         
         # Read the scheme
-        contents = open(self._scheme_input, 'r')
-        
-        for line in contents:
-            # If comment line or empty line
-            if line.startswith('#') or not line.strip():
-                continue
-            try:
-                (key, val) = line.split(' -> ')
-            except ValueError:
-                print("Bad scheme entry; not separated by ' -> ': " + line)
-            try:
-                self.__process_scheme(key, val)
-            except (RuntimeError, SyntaxError, TypeError, KeyError, StopIteration) as e:
-                print("Issue with processing scheme item: " + line)
-                print(e)
+        with open(self._scheme_input, 'r') as f:
+            for line in f:
+                # If comment line or empty line
+                if line.startswith('#') or not line.strip():
+                    continue
+                try:
+                    (key, val) = line.split(' -> ')
+                except ValueError:
+                    print("Bad scheme entry; not separated by ' -> ': " + line)
+                try:
+                    self.__process_scheme(key, val)
+                except (RuntimeError, SyntaxError, TypeError, KeyError, StopIteration) as e:
+                    print("Issue with processing scheme item: " + line)
+                    print(e)
     
     def __process_scheme(self, key, val):
         """
