@@ -66,7 +66,7 @@ class Checkout:
             return    
         # If a Product, add intrinsic value to total
         # If a Coupon, no intrinsic value, so do not add to total
-        self._total = round(self._total+item.get_intrinsic_value(),2)
+        self._total = round(self._total + item.get_intrinsic_value(), 2)
         # Print info based on Item type/value
         print(item)
         # Add item to pending items if a rule exists that includes it
@@ -92,7 +92,7 @@ class Checkout:
             for item in rule.get_items():
                 self._pending_items.remove(item)
         # Adjust total price
-        self._total = round(self._total+rule.get_diff(),2)
+        self._total = round(self._total + rule.get_diff(), 2)
         print("Adjustment " + rule.get_name() 
                 + " " + str(rule.get_diff())
                 + " applied for item(s) "
@@ -362,7 +362,7 @@ class Scheme:
             if not Counter(rule.get_items()) - Counter(items):
                 # Get closest rule if multiple can apply
                 # Closest = most matched items = lowest sum in the difference
-                best_sum = sum((Counter(items)-Counter(rule.get_items())).values())
+                best_sum = sum((Counter(items) - Counter(rule.get_items())).values())
                 if  best_sum < best_count:
                     best_rule = rule
                     best_count = best_sum
@@ -409,7 +409,7 @@ class Rule:
             tot += item.get_intrinsic_value()
           
         # Round to nearest cent
-        return round(self._amount-tot,2)
+        return round(self._amount-tot, 2)
 
     def get_name(self):
         return self._name
@@ -527,7 +527,7 @@ class Coupon(Item):
         '50.0%'
         """
         
-        return str(round(self._discount*100,2))+"%"
+        return str(round(self._discount * 100, 2))+"%"
         
 if __name__ == '__main__':
     import doctest
