@@ -129,10 +129,12 @@ class Scheme:
         rules (list): List of Rules
         
     Methods:
-        get_item()
-            Get an item that exists in a rule
-        get_rule()
-            Get a Rule based on given items
+        exists_in_rule(item)
+            Determine if an item exists in any Rule
+        get_item(id)
+            Get an item that exists in the Scheme
+        get_rule(items)
+            Get the best Rule based on given items
     """
     
     def __init__(self, scheme_input):
@@ -144,6 +146,85 @@ class Scheme:
         self._rules = []
         self.__read_scheme()
        
+    def exists_in_rule(self, item):
+        """
+        Determines if an item exists in at least one rule.
+        
+        Parameters:
+            id (str): Unique id of item
+        
+        Returns:
+            bool: True if Item exists in >= 1 Rule, False otherwise
+            
+        >>> s.exists_in_rule('8873')
+        True
+        >>> s.exists_in_rule('123')
+        False
+        """
+        
+        for rule in self._rules:
+            if item in rule.get_items():
+                return True
+        
+        return False
+    
+    def get_item(self, id):
+        """
+        Gets an item that exists in the Scheme.
+        
+        Parameters:
+            id (str): Unique id of item
+        
+        Returns:
+            Item: Item that exists in a rule
+        
+        >>> s.get_item('123')
+        123 not found in Scheme!
+        >>> s.get_item('8873') #doctest: +ELLIPSIS
+        <__main__.Product object at 0x...>
+        """
+        
+        try:
+            return next(filter(lambda i: i.get_id() == id, self._items))
+        except StopIteration:
+            print(id + " not found in Scheme!")
+       
+    def get_rule(self, items):
+        """
+        Get the best rule to apply based on pending items in checkout.
+        
+        Parameters:
+            items (list): List of pending items
+        
+        Returns:
+            Rule: Rule to apply at checkout
+        
+        >>> s.get_rule([Product('123',123)])
+        >>> s.get_rule([s.get_item('8873')])
+        >>> s.get_rule([s.get_item('8873'),s.get_item('C1')]) #doctest: +ELLIPSIS
+        <__main__.Rule object at 0x...>
+        """
+        
+        # Keep track of the best rule to use
+        best_rule = None
+        best_count = float('inf')
+        # Rule matches if it's items exist as a subset 
+        #   to the total pending items in checkout.
+        for rule in self._rules:
+            # A valid rule will apply to latest item (optimization)
+            if items[-1] not in rule.get_items():
+                continue
+            # Rule matches based on current pending items in checkout
+            if not Counter(rule.get_items()) - Counter(items):
+                # Get closest rule if multiple can apply
+                # Closest = most matched items = lowest sum in the difference
+                best_sum = sum((Counter(items) - Counter(rule.get_items())).values())
+                if  best_sum < best_count:
+                    best_rule = rule
+                    best_count = best_sum
+        
+        return best_rule
+    
     def __read_scheme(self):
         """
         Process input Scheme file into a set of items and rules.
@@ -235,8 +316,9 @@ class Scheme:
         for item in items:
             # Replace each item in expression with its value
             try:
-                expression = expression.replace('{'+item+'}', 
-                    str(next(filter(lambda i: i.get_id() == item, self._items)).get_value()))
+                expression = re.sub(r'\{('+item+'+?)\}',
+                    str(next(filter(lambda i: i.get_id() == item, self._items)).get_value()),
+                    expression)
             except StopIteration:
                 print("Item " + item + " not found in Scheme!")
         
@@ -253,7 +335,7 @@ class Scheme:
             list: List of found groups
         """
         
-        res = re.findall('\{([^}]+)', input)
+        res = re.findall('\{(.+?)\}', input)
         
         if len(res) == 0:
             raise RuntimeError("No expression inside {} for input: " + input)
@@ -288,85 +370,6 @@ class Scheme:
         ##if code.co_names:
             ##raise NameError("Use of names not allowed")
         ##return eval(code, {"__builtins__": {}}, {})
-    
-    def exists_in_rule(self, item):
-        """
-        Determines if an item exists in at least one rule.
-        
-        Parameters:
-            id (str): Unique id of item
-        
-        Returns:
-            bool: True if Item exists in >= 1 Rule, False otherwise
-            
-        >>> s.exists_in_rule('8873')
-        True
-        >>> s.exists_in_rule('123')
-        False
-        """
-        
-        for rule in self._rules:
-            if item in rule.get_items():
-                return True
-        
-        return False
-    
-    def get_item(self, id):
-        """
-        Gets an item that exists in the Scheme.
-        
-        Parameters:
-            id (str): Unique id of item
-        
-        Returns:
-            Item: Item that exists in a rule
-        
-        >>> s.get_item('123')
-        123 not found in Scheme!
-        >>> s.get_item('8873') #doctest: +ELLIPSIS
-        <__main__.Product object at 0x...>
-        """
-        
-        try:
-            return next(filter(lambda i: i.get_id() == id, self._items))
-        except StopIteration:
-            print(id + " not found in Scheme!")
-       
-    def get_rule(self, items):
-        """
-        Get the best rule to apply based on pending items in checkout.
-        
-        Parameters:
-            items (list): List of pending items
-        
-        Returns:
-            Rule: Rule to apply at checkout
-        
-        >>> s.get_rule([Product('123',123)])
-        >>> s.get_rule([s.get_item('8873')])
-        >>> s.get_rule([s.get_item('8873'),s.get_item('C1')]) #doctest: +ELLIPSIS
-        <__main__.Rule object at 0x...>
-        """
-        
-        # Keep track of the best rule to use
-        best_rule = None
-        best_count = float('inf')
-        # Rule matches if it's items exist as a subset 
-        #   to the total pending items in checkout.
-        for rule in self._rules:
-            # A valid rule will apply to latest item (optimization)
-            if items[-1] not in rule.get_items():
-                continue
-            # Rule matches based on current pending items in checkout
-            if not Counter(rule.get_items()) - Counter(items):
-                # Get closest rule if multiple can apply
-                # Closest = most matched items = lowest sum in the difference
-                best_sum = sum((Counter(items) - Counter(rule.get_items())).values())
-                if  best_sum < best_count:
-                    best_rule = rule
-                    best_count = best_sum
-        
-        return best_rule
         
 class Rule:
     """
@@ -494,7 +497,8 @@ class Coupon(Item):
         discount (float): Discount of Coupon
     
     Methods:
-        get_percentage(): Get percentage to print
+        get_percentage()
+            Get percentage to print
     """
     
     def __init__(self, id, discount):
