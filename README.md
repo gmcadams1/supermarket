@@ -49,3 +49,15 @@ _Note_: Requires package numexpr as currently implemented.
 # Install numexpr
 pip install numexpr
 ```
+### Notes
+Items need to be defined before Rules in a Scheme file.
+
+Entries in a Scheme file should be formatted properly:
+```
+# Items - Simple {str} -> float
+{str} -> float
+# Rules - Left-side of '=' contains 1 or more {str} Items
+#         Right-side of '=' can contain {str} Items and/or any valid math operators
+{str} -> {str}...{str}=...
+```
+Scheme file can have blank lines or comment lines (starting with a `#` character) that will be ignored.
