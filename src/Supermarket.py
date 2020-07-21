@@ -215,9 +215,16 @@ class Scheme:
             if items[-1] not in rule.get_items():
                 continue
             # Rule matches based on current pending items in checkout
+            # Pending items must include all items in Rule
+            # (Passes) Counter([1,2,3]) - Counter([1,2,3,4,5,6]) = Counter()
+            # (Fails) Counter([1,2,3,9]) - Counter([1,2,3,4,5,6]) = Counter({9: 1})
             if not Counter(rule.get_items()) - Counter(items):
                 # Get closest rule if multiple can apply
                 # Closest = most matched items = lowest sum in the difference
+                # >>> (Counter([1,2,3,4,5,6])-Counter([1,2])).values()
+                # dict_values([1, 1, 1, 1])
+                # >>> (Counter([1,2,3,4,5,6])-Counter([1,2,3])).values()
+                # dict_values([1, 1, 1])
                 best_sum = sum((Counter(items) - Counter(rule.get_items())).values())
                 if  best_sum < best_count:
                     best_rule = rule
@@ -316,7 +323,7 @@ class Scheme:
         for item in items:
             # Replace each item in expression with its value
             try:
-                expression = re.sub(r'\{('+item+'+?)\}',
+                expression = re.sub('\{('+item+'+?)\}',
                     str(next(filter(lambda i: i.get_id() == item, self._items)).get_value()),
                     expression)
             except StopIteration:
@@ -434,8 +441,8 @@ class Item(ABC):
         # Unique id of Item
         self._id = id # '1234'
         
-    def __eq__(self, other_id):
-        return self._id == other_id
+    def __eq__(self, other):
+        return self._id == other._id
         
     def get_id(self):
         return self._id
