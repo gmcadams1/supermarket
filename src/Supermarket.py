@@ -156,9 +156,9 @@ class Scheme:
         Returns:
             bool: True if Item exists in >= 1 Rule, False otherwise
             
-        >>> s.exists_in_rule('8873')
+        >>> s.exists_in_rule(Product('8873',2.49))
         True
-        >>> s.exists_in_rule('123')
+        >>> s.exists_in_rule(Product('123',0))
         False
         """
         
